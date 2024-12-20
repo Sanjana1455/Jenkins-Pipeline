@@ -1,0 +1,44 @@
+pipeline {
+    agent { label 'slave_node' } 
+    stages {
+        stage('Clone Repository') {
+            steps {
+                
+                git url: 'https://github.com/Sanjana1455/docker-install.git', branch: 'main'
+            }
+        }
+        stage('Install Docker') {
+            steps {
+                
+                sh 'sh docker.sh'
+            }
+        }
+        stage('Pull Docker Image') {
+            steps {
+                sh 'docker pull nginx:latest'
+            }
+        }
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker', 
+                                                 usernameVariable: 'DOCKER_USER', 
+                                                 passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    '''
+                }
+            }
+        }
+        stage('Push Docker Image') {
+            steps {
+                sh 'docker tag nginx:latest sanjana104/nginx:latest'
+                sh 'docker push sanjana104/nginx:latest'
+            }
+        }
+    }
+    post {
+        always {
+            echo 'Pipeline completed'
+        }
+    }
+}
